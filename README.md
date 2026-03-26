@@ -20,10 +20,11 @@ Cannot access: Products, Inventory, Customers
 
 
 Support (support@demo.com)
-Can see: Dashboard, Orders, Customers
+Can see: Dashboard, Orders, Customers, Issues
 Cannot access: Products, Inventory, Reports
 
 
 Customer (customer@demo.com)
-Can see: Dashboard only (inside private area)
-Cannot access: Products, Inventory, Orders, Customers, Reports
+Can see: Products only
+Can do: Buy products directly from the Products page
+Cannot access: Dashboard, Inventory, Orders, Customers, Reports, Issues
