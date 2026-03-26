@@ -16,7 +16,7 @@ export function ProtectedRoute({ allowedRoles, children }: Props) {
   }
 
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={user.role === Role.Customer ? '/products' : '/dashboard'} replace />
   }
 
   return <>{children}</>

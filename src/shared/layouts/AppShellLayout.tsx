@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, NavLink, ScrollArea, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { IconBox, IconClipboardList, IconDashboard, IconMoon, IconReportAnalytics, IconSun, IconUsers } from '@tabler/icons-react'
+import { IconAlertCircle, IconBox, IconClipboardList, IconDashboard, IconMoon, IconReportAnalytics, IconSun, IconUsers } from '@tabler/icons-react'
 import { type ReactNode } from 'react'
 import { useThemeStore } from '../stores/themeStore'
 import { useAuthStore } from '../stores/authStore'
@@ -15,12 +15,17 @@ type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: <IconDashboard size={18} /> },
+  {
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: <IconDashboard size={18} />,
+    roles: [Role.Admin, Role.InventoryManager, Role.SalesManager, Role.Support],
+  },
   {
     label: 'Products',
     path: '/products',
     icon: <IconBox size={18} />,
-    roles: [Role.Admin, Role.InventoryManager],
+    roles: [Role.Admin, Role.InventoryManager, Role.Customer],
   },
   {
     label: 'Inventory',
@@ -38,6 +43,12 @@ const navItems: NavItem[] = [
     label: 'Customers',
     path: '/customers',
     icon: <IconUsers size={18} />,
+    roles: [Role.Admin, Role.Support, Role.SalesManager, Role.InventoryManager],
+  },
+  {
+    label: 'Issues',
+    path: '/issues',
+    icon: <IconAlertCircle size={18} />,
     roles: [Role.Admin, Role.Support],
   },
   {

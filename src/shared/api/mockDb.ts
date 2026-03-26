@@ -33,9 +33,16 @@ export type OrderLine = {
 export type Order = {
   id: string
   customerId: string
+  createdByUserId: string
   status: OrderStatus
   createdAt: string
   lines: OrderLine[]
+  issue?: {
+    id: string
+    message: string
+    raisedByUserId: string
+    createdAt: string
+  }
 }
 
 export type Customer = {
@@ -89,6 +96,7 @@ export const inventory: InventoryItem[] = products.map((p, idx) => ({
 }))
 
 export const customers: Customer[] = [
+  { id: id(), name: 'Demo Customer', email: 'customer@demo.com', phone: '+1 555 0199' },
   { id: id(), name: 'Acme Corp', email: 'buyer@acme.com', phone: '+1 555 0101' },
   { id: id(), name: 'Globex', email: 'orders@globex.com', phone: '+1 555 0102' },
   { id: id(), name: 'Initech', email: 'purchasing@initech.com', phone: '+1 555 0103' },
@@ -98,6 +106,7 @@ export const orders: Order[] = [
   {
     id: id(),
     customerId: customers[0]!.id,
+    createdByUserId: users[2]!.id,
     status: OrderStatus.Processing,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
     lines: [
@@ -108,9 +117,16 @@ export const orders: Order[] = [
   {
     id: id(),
     customerId: customers[1]!.id,
+    createdByUserId: users[0]!.id,
     status: OrderStatus.Shipped,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
     lines: [{ productId: products[1]!.id, qty: 1, unitPrice: products[1]!.price }],
+    issue: {
+      id: id(),
+      message: 'Package delayed in transit',
+      raisedByUserId: users[4]!.id,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    },
   },
 ]
 

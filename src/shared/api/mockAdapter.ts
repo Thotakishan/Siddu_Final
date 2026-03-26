@@ -1,10 +1,11 @@
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { computeStats, customers, inventory, orders, products, sessions, users, type Customer, type InventoryItem, type Order, type Product, OrderStatus } from './mockDb'
-import { type AuthTokens, type User } from '../types/auth'
+import { Role, type AuthTokens, type User } from '../types/auth'
 
 type ApiError = { message: string }
 type LoginBody = { email: string; password: string }
 type RefreshBody = { refreshToken: string }
+type NewIssueBody = { message: string }
 
 const ACCESS_TTL_MS = 60_000
 
@@ -97,11 +98,14 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   }
 
   // Protected endpoints
-  if (url.startsWith('products') || url.startsWith('inventory') || url.startsWith('orders') || url.startsWith('customers') || url.startsWith('reports')) {
+  if (url.startsWith('products') || url.startsWith('inventory') || url.startsWith('orders') || url.startsWith('customers') || url.startsWith('reports') || url.startsWith('issues')) {
     const auth = requireAuth(config)
     if ('status' in auth) return auth
-    void auth.user
+    const currentUser = auth.user
+    void currentUser
   }
+  const auth = requireAuth(config)
+  const currentUser = 'status' in auth ? null : auth.user
 
   // Products
   if (method === 'get' && url === 'products') {
@@ -154,10 +158,16 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
   // Orders
   if (method === 'get' && url === 'orders') {
-    return json(config, 200, { items: orders } as { items: Order[] })
+    if (!currentUser) return json(config, 401, { message: 'Unauthorized' })
+    const items =
+      currentUser.role === Role.Customer
+        ? orders.filter((o) => o.createdByUserId === currentUser.id)
+        : orders
+    return json(config, 200, { items } as { items: Order[] })
   }
 
   if (method === 'post' && url === 'orders') {
+    if (!currentUser) return json(config, 401, { message: 'Unauthorized' })
     const body = parseBody<Pick<Order, 'customerId' | 'lines'>>(config)
     if (!body?.customerId || !Array.isArray(body.lines) || body.lines.length === 0) {
       return json(config, 400, { message: 'Invalid order' })
@@ -165,6 +175,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     const next: Order = {
       id: crypto.randomUUID(),
       customerId: body.customerId,
+      createdByUserId: currentUser.id,
       status: OrderStatus.Pending,
       createdAt: new Date().toISOString(),
       lines: body.lines,
@@ -174,13 +185,59 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   }
 
   if (method === 'put' && url.startsWith('orders/')) {
+    if (!currentUser) return json(config, 401, { message: 'Unauthorized' })
     const orderId = url.split('/')[1]
     const body = parseBody<Pick<Order, 'status'>>(config)
     const idx = orders.findIndex((o) => o.id === orderId)
     if (idx < 0) return json(config, 404, { message: 'Not found' })
     if (!body?.status) return json(config, 400, { message: 'Invalid body' })
+    if (currentUser.role === Role.Customer) {
+      const target = orders[idx]!
+      if (target.createdByUserId !== currentUser.id) {
+        return json(config, 403, { message: 'Forbidden' })
+      }
+      if (![OrderStatus.Cancelled].includes(body.status)) {
+        return json(config, 400, { message: 'Customers can only cancel their own orders' })
+      }
+    }
     orders[idx] = { ...orders[idx]!, status: body.status }
     return json(config, 200, orders[idx]!)
+  }
+
+  if (method === 'post' && url.match(/^orders\/[^/]+\/issue$/)) {
+    if (!currentUser) return json(config, 401, { message: 'Unauthorized' })
+    if (currentUser.role !== Role.Customer) {
+      return json(config, 403, { message: 'Only customers can raise issues' })
+    }
+    const orderId = url.split('/')[1]
+    const idx = orders.findIndex((o) => o.id === orderId)
+    if (idx < 0) return json(config, 404, { message: 'Not found' })
+    const body = parseBody<NewIssueBody>(config)
+    if (!body?.message || body.message.trim().length < 5) {
+      return json(config, 400, { message: 'Issue message is too short' })
+    }
+    if (orders[idx]!.createdByUserId !== currentUser.id) {
+      return json(config, 403, { message: 'Forbidden' })
+    }
+    orders[idx] = {
+      ...orders[idx]!,
+      issue: {
+        id: crypto.randomUUID(),
+        message: body.message.trim(),
+        raisedByUserId: currentUser.id,
+        createdAt: new Date().toISOString(),
+      },
+    }
+    return json(config, 200, orders[idx]!)
+  }
+
+  if (method === 'get' && url === 'issues') {
+    if (!currentUser) return json(config, 401, { message: 'Unauthorized' })
+    if (![Role.Support, Role.Admin].includes(currentUser.role)) {
+      return json(config, 403, { message: 'Forbidden' })
+    }
+    const items = orders.filter((o) => o.issue)
+    return json(config, 200, { items } as { items: Order[] })
   }
 
   // Customers

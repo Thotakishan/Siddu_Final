@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { useAuthStore } from '../../../shared/stores/authStore'
 import { tokenStorage } from '../../../shared/auth/tokenStorage'
+import { Role } from '../../../shared/types/auth'
 
 const schema = z.object({
   email: z.string().email(),
@@ -41,7 +42,8 @@ export function LoginPage() {
       notifications.show({ color: 'teal', title: 'Welcome', message: `Signed in as ${res.user.name}` })
 
       const state = location.state as LocationState | null
-      const dest = state?.from ?? '/dashboard'
+      const defaultDest = res.user.role === Role.Customer ? '/products' : '/dashboard'
+      const dest = state?.from ?? defaultDest
       navigate(dest, { replace: true })
     } catch {
       notifications.show({ color: 'red', title: 'Login failed', message: 'Invalid credentials or server error.' })
