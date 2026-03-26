@@ -1,4 +1,4 @@
-import { AppShell, Burger, Group, NavLink, ScrollArea, Text } from '@mantine/core'
+import { ActionIcon, AppShell, Burger, Button, Group, NavLink, ScrollArea, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { IconAlertCircle, IconBox, IconClipboardList, IconDashboard, IconMoon, IconReportAnalytics, IconSun, IconUsers } from '@tabler/icons-react'
@@ -80,25 +80,31 @@ export function AppShellLayout() {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
+        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+          <Group wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={700}>E-Commerce IMS</Text>
           </Group>
 
-          <Group>
-            <NavLink
-              label={colorScheme === 'dark' ? 'Light' : 'Dark'}
-              leftSection={colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+          <Group gap="xs" wrap="nowrap">
+            <ActionIcon
+              variant="subtle"
+              size="lg"
+              aria-label="Toggle theme"
               onClick={toggleTheme}
-            />
-            <NavLink
-              label="Logout"
+            >
+              {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </ActionIcon>
+            <Button
+              variant="subtle"
+              size="xs"
               onClick={() => {
                 clear()
                 navigate('/login', { replace: true })
               }}
-            />
+            >
+              Logout
+            </Button>
           </Group>
         </Group>
       </AppShell.Header>
